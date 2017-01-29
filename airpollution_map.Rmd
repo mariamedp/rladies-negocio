@@ -30,7 +30,7 @@ UMBRAL_INFORMACION <- 180
              
 ```
 
-Datos de ejemplo: mediciones de NO2 del 29/12/2016 a las 22h.
+Datos de ejemplo: mediciones de NO2 del 29/12/2016 a las 22h (CET).
 ```{r, echo=FALSE, results='asis'}
 DT::datatable(airp_measures)
 ```
