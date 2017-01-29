@@ -1,0 +1,50 @@
+---
+title: "Flexdashboard de ejemplo"
+author: "María Medina - R-Ladies meetup"
+date: 31/01/2017
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+---
+
+```{r, echo=FALSE}
+library(DT); library(ggplot2); library(plotly)
+```
+
+El conjunto de datos
+=====================
+
+El dataset `diamonds` contiene una serie de atributos de distintos diamantes. Está en el paquete `ggplot2`.
+
+**Datos:**
+
+```{r, echo=FALSE}
+DT::datatable(diamonds)
+```
+                    
+Visualizaciones
+=====================
+
+Row
+---------
+
+```{r, fig.width=20, fig.height=5}
+p <- ggplot(diamonds, aes(x=price, fill=cut)) + geom_histogram(binwidth=200) +
+  labs(x="Precio", y="Frecuencia", fill="Calidad") + ggtitle("Histograma de precios")
+ggplotly(p)
+```
+
+Column
+---------
+
+```{r, fig.width=10, fig.height=5}
+p <- ggplot(diamonds, aes(x=carat, y=price, color=cut)) + geom_point(size=0.5) +
+  labs(x="Peso", y="Precio", color="Calidad") + ggtitle("Precio según peso - valores")
+ggplotly(p)
+```
+
+```{r, fig.width=10, fig.height=5}
+p <- ggplot(diamonds, aes(x=carat, y=price, color=cut)) + geom_smooth() +
+  labs(x="Peso", y="Precio", color="Calidad") + ggtitle("Precio según peso - tendencia")
+ggplotly(p)
+```
