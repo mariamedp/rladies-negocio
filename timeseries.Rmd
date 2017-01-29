@@ -1,0 +1,75 @@
+---
+title: "Predicción de series temporales"
+author: "María Medina - R-Ladies meetup"
+date: 31/01/2017
+output: html_document
+---
+
+## Setup
+
+```{R, echo=FALSE}
+library(DT)
+
+TRAIN_PROPORTION <- 0.9
+```
+
+Dataset de ejemplo: accidentes mortales de coche mensuales en Gran Bretaña entre 1969 y 1984.
+```{r, echo=FALSE, results='asis'}
+DT::datatable(Seatbelts, rownames=TRUE)
+```
+
+Queremos predecir la serie temporal del número de accidentes. Dividimos en train/test:
+```{r}
+tseries <- Seatbelts[, "drivers"]
+
+ind_ini_test <- ceiling(TRAIN_PROPORTION * length(tseries))
+tseries_train <- window(tseries, end = time(tseries)[ind_ini_test])
+tseries_test <- window(tseries, start = time(tseries)[ind_ini_test + 1])
+```
+
+
+## Predicción sin regresores externos
+
+Ajustamos un modelo ARIMA sobre la serie de train para predecir la de test:
+```{r}
+suppressPackageStartupMessages(library(forecast))
+
+lambda <- BoxCox.lambda(tseries_train, lower=0)
+fit <- auto.arima(tseries_train, lambda=lambda, 
+                  stepwise=FALSE, approximation=FALSE)
+
+fc <- forecast(fit, h=length(tseries)-ind_ini_test+1)
+
+plot(fc)
+lines(tseries_test)
+```
+
+El modelo ajustado se queda algo por encima del valor real. ¿Por qué? A partir de febrero de 1983 entró en vigor la ley que hizo obligatorio el uso del cinturón de seguridad.
+
+## Predicción con regresores externos
+
+Creamos la serie temporal de los regresores externos, en este caso solo uno: el indicador mensual de si la ley estaba en vigor o no.
+```{r}
+varextra <- Seatbelts[, c("law")]
+
+varextra_train <- window(varextra, end = time(varextra)[ind_ini_test])
+varextra_test <- window(varextra, start = time(varextra)[ind_ini_test + 1])
+```
+
+Ajustamos un modelo con regresores externos:
+```{r}
+fit_varextra <- auto.arima(tseries_train, lambda=lambda, xreg=varextra_train, 
+                           stepwise=FALSE, approximation=FALSE)
+
+fc_varextra <- forecast(fit_varextra, xreg=varextra_test, h=length(tseries)-ind_ini_test+1)
+
+plot(fc_varextra)
+lines(tseries_test)
+```
+
+Vemos que, efectivamente, la variable externa ha ayudado a mejorar nuestra predicción.
+
+
+  
+
+
