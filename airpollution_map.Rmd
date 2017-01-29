@@ -1,0 +1,69 @@
+---
+title: "Mapa de contaminación en Madrid"
+author: "María Medina - R-Ladies meetup"
+date: 31/01/2017
+output: html_document
+---
+
+## Setup
+
+```{R, echo=FALSE}
+library(DT);
+suppressPackageStartupMessages(library(ggmap))
+
+airp_measures <- data.frame(datetime = as.POSIXct("2016-12-29 22:00:00"), 
+                            station = c("Pza. de España", "Escuelas Aguirre", "Avda. Ramón y Cajal", "Pza. del Carmen", 
+                                        "Cuatro Caminos", "Barrio del Pilar", "Mendez Alvaro", "Castellana", "Parque del Retiro", 
+                                        "Plaza Castilla", "Moratalaz", "Vallecas", "Ensanche de Vallecas", "Arturo Soria", 
+                                        "Barajas Pueblo", "Urb. Embajada", "Sanchinarro", "Juan Carlos I", "Tres Olivos", 
+                                        "Casa de Campo", "El Pardo", "Villaverde Alto", "Farolillo", "Pza. Fernández Ladreda"),
+                            lon = c(-3.712247, -3.682319, -3.677356, -3.7, -3.707128, -3.711542, -3.683333, -3.683333, 
+                                     -3.682583, -3.688769, -3.645306, -3.651522, -3.6, -3.639233, -3.580031, -3.580747, 
+                                     -3.65, -3.6, -3.683333, -3.747347, -3.766667, -3.713322, -3.731853, -3.718728),
+                            lat = c(40.42385, 40.42156, 40.45148, 40.41921, 40.44554, 40.47823, 40.39811, 40.4399, 
+                                    40.41444, 40.46557, 40.40795, 40.38815, 40.37293, 40.44005, 40.47693, 40.46253, 
+                                    40.49421, 40.46525, 40.50059, 40.41936, 40.51806, 40.34714, 40.39478, 40.38496),
+                            no2 = c(116, 173, 198, 133, 192, 243, 143, 112, 85, 122, 125, 120, 232, 130, 
+                                            106, 115, 235, 75, 135, 72, 28, 227, 96, 99))
+
+UMBRAL_INFORMACION <- 180
+             
+```
+
+Datos de ejemplo: mediciones de NO2 del 29/12/2016 a las 22h.
+```{r, echo=FALSE, results='asis'}
+DT::datatable(airp_measures)
+```
+
+
+## Mapa con niveles perjudiciales de NO2
+
+Descargamos mapa de Madrid:
+```{r}
+ center_coords <- c(-3.670205, 40.425208)
+ map <- get_map(location=center_coords, zoom=12, maptype="roadmap", color="bw", source="google")
+```
+
+Creamos la visualización:
+```{r, fig.width=7.5, fig.height=7.5}
+
+# Estaciones que superan el umbral
+airp_umbral <- subset(airp_measures, no2 > UMBRAL_INFORMACION)
+
+# Niveles en la escala de color
+cortes <- seq(180, 300, 20)
+red_palette <- colorRampPalette(colors=c("red", "dark red"))(length(cortes) - 1)
+airp_umbral$no2_bin <- cut(airp_umbral$no2, cortes)
+  
+# Visualización mapa
+ggmap(map) + 
+  geom_point(data=airp_umbral, aes(x=lon, y=lat, col=no2_bin), size=5, shape=19) +
+  geom_point(data=airp_umbral, aes(x=lon, y=lat, col=no2_bin), size=10, shape=1) +
+  geom_text(data=airp_umbral, aes(x=lon, y=lat, label=no2, col=no2_bin), 
+              hjust=0.5, vjust=-1.5, size=5, fontface="bold") +
+  scale_color_manual(values=setNames(red_palette, levels(airp_umbral$no2_bin))) + 
+  guides(col=FALSE) + labs(x=NULL, y=NULL) +
+  ggtitle("29/12/2016 22h - Zonas con niveles de NO2 perjudiciales para la salud") +
+  theme(title=element_text(size=13), axis.ticks=element_blank(), axis.text=element_blank())
+
+```
